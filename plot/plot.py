@@ -21,7 +21,7 @@ def plot_top(time_period, agg_type, plot_type, data_frame_column,
     label = time_period.get_label()
     Path('./tops/%ss/%s' % (agg_type.get_over_type(), label.lower())).mkdir(
         parents=True, exist_ok=True)
-    df = agg_type.retrieve(time_period.get_value(), 20, with_remaining)
+    df = agg_type.retrieve(time_period.get_value(), 100, with_remaining)
     bio = plot_type.plot(df, data_frame_column)
     plt.close()
     return bio
