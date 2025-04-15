@@ -220,4 +220,8 @@ def create_tracks_dataframe(rows):
     # Переименовываем для совместимости
     df = df.rename(columns={'Plays': 'PlayCount'})
 
+    df.to_csv('top_tracks.csv', index=False, encoding='utf-8')
+
     return df.sort_values(by='PlayCount', ascending=False)
+
+
