@@ -1,0 +1,19 @@
+lastfm:
+    service:
+        username: usernmae
+        apiKey: apikey
+        startYear: 2006
+    db:
+        dbms: sqlite
+        mysql:
+            dbName: lastfm
+            user: lastfm
+            password: password
+        sqlite:
+            dbName: lastfm.sqlite
+plot:
+    saveEnabled: True
+    sendViaTelegram: True
+telegram:
+    token: token
+    chatId: chatid

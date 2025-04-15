@@ -1,0 +1,7 @@
+__pycache__
+tops/
+venv/
+.idea/
+lastfm.sqlite
+db/
+liquibase/*.jar

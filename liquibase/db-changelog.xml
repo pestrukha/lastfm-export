@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="1" author="nicolas" context="Create json_track">
+        <createTable tableName="json_track">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="json" type="json"/>
+        </createTable>
+        <rollback>
+            <dropTable tableName="json_track"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="2" author="nicolas" context="tag tables">
+        <tagDatabase tag="json_track"/>
+    </changeSet>
+
+    <changeSet id="3" author="nicolas" context="Create play table">
+        <createTable tableName="play">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="artist_name" type="varchar(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="artist_mbid" type="varchar(36)"/>
+            <column name="album_name" type="varchar(256)"/>
+            <column name="album_mbid" type="varchar(36)"/>
+            <column name="track_name" type="varchar(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="track_mbid" type="varchar(36)"/>
+            <column name="track_url" type="text"/>
+
+            <column name="play_date_uts" type="varchar(10)"/>
+            <column name="play_date" type="datetime"/>
+            <column name="creation_date" type="timestamp" defaultValueDate="CURRENT_TIMESTAMP"/>
+            <column name="update_date" type="timestamp" defaultValueDate="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="play"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="4" author="nicolas" context="Create play indexes">
+        <createIndex tableName="play" indexName="play_date_test_idx">
+            <column name="play_date"/>
+        </createIndex>
+        <createIndex tableName="play" indexName="play_artist_album_test_idx">
+            <column name="artist_name"/>
+            <column name="album_name"/>
+        </createIndex>
+        <createIndex tableName="play" indexName="play_track_test_idx">
+            <column name="track_name"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex tableName="play" indexName="play_date_test_idx"/>
+            <dropIndex tableName="play" indexName="play_artist_album_test_idx"/>
+            <dropIndex tableName="play" indexName="play_track_test_idx"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="5" author="nicolas" context="Create artist_replacement table">
+        <createTable tableName="artist_replacement">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="album_name" type="varchar(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="artist_name" type="varchar(512)"/>
+            <column name="replace_by" type="varchar(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="creation_date" type="timestamp" defaultValueDate="CURRENT_TIMESTAMP"/>
+            <column name="update_date" type="timestamp" defaultValueDate="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="artist_replacement"/>
+        </rollback>
+
+        <modifySql dbms="mysql">
+            <append value="engine=InnoDB default charset=utf8 collate=utf8_unicode_ci row_format=Compressed"/>
+        </modifySql>
+    </changeSet>
+
+    <changeSet id="6" author="nicolas" context="Create artist_replacement index">
+        <createIndex tableName="artist_replacement" indexName="replace_artist_album_name_idx">
+            <column name="album_name"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex tableName="artist_replacement"
+                       indexName="replace_artist_album_name_idx"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="7" author="nicolas" context="tag tables">
+        <tagDatabase tag="tables"/>
+    </changeSet>
+
+    <changeSet id="8" author="nicolas" context="Create views" dbms="mysql,mariadb">
+        <createView viewName="view_play_count_by_month">
+            select date_format(p.play_date, '%Y-%m') as yr_month,
+                   date_format(p.play_date, '%b') as month,
+                   count(p.id) as count
+            from play p
+            group by yr_month
+            order by yr_month;
+        </createView>
+
+        <rollback>
+            <dropView viewName="view_play_count_by_month"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="9" author="nicolas" context="Create views" dbms="sqlite">
+        <createView viewName="view_play_count_by_month">
+            select strftime('%Y-%m', p.play_date) as yr_month,
+                   substr('JanFebMarAprMayJunJulAugSepOctNovDec',
+                          1 + 3 * strftime('%m', date(p.play_date)),
+                          -3) as month,
+                   count(p.id) as count
+            from play p
+            group by yr_month
+            order by yr_month;
+        </createView>
+
+        <rollback>
+            <dropView viewName="view_play_count_by_month"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="10" author="nicolas" context="Grants" dbms="mysql,mariadb">
+        <sql>
+            use lastfm;
+
+            grant select, insert, update, create view on lastfm.* to lastfm@`%`;
+        </sql>
+
+        <rollback/>
+    </changeSet>
+
+    <changeSet id="11" author="nicolas" context="Insert artist_replacements rows">
+        <sql>
+            insert into artist_replacement (album_name, replace_by) values ('25 Ans De Radio Nova (Boxset) - 1993', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Battlestar Galactica: Season 3', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Big Apple Rappin''', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Breaking Bad (Music from the Original TV Series)', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Brokeback Mountain (Original Motion Picture Soundtrack, Score &amp; Songs)', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Brownswood Bubblers', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Brownswood Bubblers 2', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Brownswood Bubblers 3', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Brownswood Bubblers 5', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Brownswood Bubblers Two', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('cold waves and minimal electronics vol. 1', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('DJ-Kicks', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Emkog Sampler 2010', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('First Generation Rap - The Old School Vol. 3', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Forgetting Sarah Marshall', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Harlem World: The Sound Of The Big Apple Rappin''', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('hits for ever', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Hôtel Costes 5 By Stéphane Pompougnac', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Hôtel Costes 8 By Stéphane Pompougnac', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Inventaire - Best of LabelUsines', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Juno', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Lack of Afro Presents - One Way (Remixes &amp; Rarities)', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Lack of Afro Presents: One Way (Remixes &amp; Rarities)', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Listen To The Music: Caltone''s Jamaican 45''s 1966-69', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Little Miss Sunshine', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Live in Latin America Vol. 1', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Music For Dancefloors: The KPM Music Library', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Neu Konservativ', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('NICOLA CONTE PRESENTS VIAGEM 3', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Norman Jay Presents Philadelphia - The Underground Anthems of Philadelphia Soul 1973-1981', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Nova Le Grand Mix (Boxset) - 1', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Nova Tunes 02', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Nova Tunes 07', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Nova Tunes 1.3', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Nova Tunes 1.7', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Nova Tunes 1.8', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Nova Tunes 1.9', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Nova Tunes 2.0', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Nova Tunes 2.1', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Nova Tunes 2.2', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Nova Tunes 2.8', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Nova Tunes 3.0', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Off Track, Vol. 1: The Bronx - Compiled and Mixed By Kon &amp; Amir', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Peter Kruder - Private Collection', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Poliziotteschi Graffiti', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Psych Funk Sa-Re-Ga!', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Richard Dorfmeister - Private Collection', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Rock en stock', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Singita Miracle Beach 10th Anniversary (Compiled By Jose Padilla &amp; Glass Coffee)', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Six Feet Under - Everything Ends', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Slumdog Millionaire', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Sofrito: Tropical Discotheque', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Spider-man: Rock Reflections Of A Superhero', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Stones Throw 10 Years', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('The Big Playback', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('The Boogie Volume 2', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('The Craft of Primitive Klezmer', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('The Ecstasy of Gold - 25 Killer Bullets From the Spaghetti West - Vol. 3', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('The Ecstasy of Gold - 26 Killer Bullets From the Spaghetti West - Vol. 4', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('The Funky 16 Corners', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('The K&amp;D Sessions', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('The Minimal Wave Tapes: Volume One', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('The Minimal Wave Tapes: Volume Two', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('The Sound Of Siam', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('The Third Unheard: Connecticut Hip Hop 1979-1983', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Those Shocking Shaking Days - Indonesia Hard, Psychedelic, Progressive Rock and Funk (1970-1978)', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Thrashin'' (The Ramp Locals Edition Soundtrack)', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Tricatel RSVP (Composition instantanée et improvisation collective)', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Tropical Discotheque - Limited 12"', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Veronica Mars', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Wackies Sampler Vol. 3', 'Various Artists');
+            insert into artist_replacement (album_name, replace_by) values ('Weeds', 'Various Artists');
+        </sql>
+
+        <rollback>
+            <delete tableName="artist_replacement"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
